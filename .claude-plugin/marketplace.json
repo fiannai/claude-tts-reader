@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-tts-reader",
+  "description": "Voice output for Claude Code CLI — reads responses aloud using Kokoro TTS",
+  "owner": {
+    "name": "Mike",
+    "email": "mike@fiannai.com"
+  },
+  "plugins": [
+    {
+      "name": "tts-reader",
+      "description": "TTS reader with Stop hook, voice selection, and global hotkey. Reads Claude's responses aloud via Kokoro.",
+      "source": "./tts-reader",
+      "category": "accessibility"
+    }
+  ]
+}

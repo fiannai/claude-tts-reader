@@ -1,0 +1,9 @@
+{
+  "api_url": "http://TheDen:8190",
+  "default_voice": "af_heart",
+  "max_queue_size": 20,
+  "request_timeout": 30,
+  "sentence_pause_min_ms": 80,
+  "sentence_pause_max_ms": 120,
+  "batch_start_percent": 25
+}
