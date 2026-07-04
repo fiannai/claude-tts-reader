@@ -33,6 +33,8 @@ IS_WINDOWS = os.name == "nt"
 
 DEBUG_LOG = os.path.expanduser("~/tts_hook_debug.log")
 DISABLED_FLAG = os.path.expanduser("~/.tts_disabled")
+MANUAL_FLAG = os.path.expanduser("~/.tts_manual")
+LAST_MSG_FILE = os.path.expanduser("~/.tts_last_message")
 PID_FILE = os.path.expanduser("~/.tts_speak_pid")
 STATE_DIR = os.path.expanduser("~/.tts_positions")
 
@@ -210,8 +212,6 @@ def main():
         log(f"Error reading stdin: {e}")
         return
 
-    kill_previous_playback()
-
     transcript_path = hook_input.get("transcript_path")
     last_msg = (hook_input.get("last_assistant_message") or "").strip()
 
@@ -253,6 +253,20 @@ def main():
         save_spoken_hashes(hash_file, spoken)
 
     full_text = "\n\n".join(to_speak)
+
+    # Always save the turn's text so read-last.py can replay it on
+    # demand (the manual-mode trigger passes no text — zero tokens).
+    try:
+        with open(LAST_MSG_FILE, "w", encoding="utf-8") as f:
+            f.write(full_text)
+    except IOError as e:
+        log(f"Error saving last message: {e}")
+
+    if os.path.exists(MANUAL_FLAG):
+        log(f"Manual mode: saved {len(to_speak)} block(s), not speaking")
+        return
+
+    kill_previous_playback()
     log(f"Speaking {len(to_speak)} block(s), {len(full_text)} chars")
     log(f"Preview: {full_text[:200]}...")
 
