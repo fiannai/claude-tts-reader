@@ -38,7 +38,16 @@ LAST_MSG_FILE = os.path.expanduser("~/.tts_last_message")
 PID_FILE = os.path.expanduser("~/.tts_speak_pid")
 STATE_DIR = os.path.expanduser("~/.tts_positions")
 
-MAX_REMEMBERED_HASHES = 50
+# Correctness guarantee lives in these hashes (the cursor is only a
+# scan optimization) — keep the window generous so a cursor reset
+# can't resurface old blocks. Tiny file either way.
+MAX_REMEMBERED_HASHES = 500
+
+# KNOWN LIMITATION (accepted): two Stop hooks racing inside the same
+# ~100ms window can both load the hash file before either saves and
+# double-speak one block. Requires two turn-ends nearly simultaneous;
+# worst case is one duplicate read. Cross-platform file locking isn't
+# worth the complexity here.
 
 
 def log(msg):
@@ -51,7 +60,7 @@ def log(msg):
 
 
 def text_hash(text):
-    return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()[:32]
 
 
 def kill_previous_playback():
@@ -228,9 +237,16 @@ def main():
             log(f"Error reading transcript: {e}")
 
     # Fallback / union: last_msg covers the transcript-flush race (the
-    # turn's lines may not be on disk yet when Stop fires).
-    if last_msg and text_hash(last_msg) not in {text_hash(t) for t in candidates}:
-        candidates.append(last_msg)
+    # turn's lines may not be on disk yet when Stop fires). Guard
+    # against overlap, not just exact match: last_msg can arrive as a
+    # JOINED version of blocks the transcript lists separately — if any
+    # candidate block is contained in last_msg, speaking both would
+    # duplicate audio (review finding, Composer P1).
+    if last_msg:
+        cand_hashes = {text_hash(t) for t in candidates}
+        if (text_hash(last_msg) not in cand_hashes
+                and not any(t in last_msg for t in candidates)):
+            candidates.append(last_msg)
 
     # Save ONLY the turn's final message for read-last.py replay —
     # mid-turn status blocks are noise when someone asks to hear "the

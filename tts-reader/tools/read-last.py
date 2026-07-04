@@ -69,18 +69,30 @@ def main() -> int:
     kwargs = {}
     if not IS_WINDOWS:
         kwargs["start_new_session"] = True
+    # speak.py's own errors land in the debug log, not DEVNULL — a
+    # broken player/config must not fail silently (review finding).
+    log_handle = open(os.path.expanduser("~/tts_hook_debug.log"), "a")
     proc = subprocess.Popen(
         [sys.executable, os.path.join(SCRIPT_DIR, "speak.py")],
         stdin=subprocess.PIPE,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stderr=log_handle,
         text=True,
         **kwargs,
     )
     with open(PID_FILE, "w") as f:
         f.write(str(proc.pid))
-    proc.stdin.write(text)
-    proc.stdin.close()
+    try:
+        proc.stdin.write(text)
+        proc.stdin.close()
+    except (BrokenPipeError, OSError):
+        print("speak.py died before accepting text — see ~/tts_hook_debug.log",
+              file=sys.stderr)
+        return 1
+    if proc.poll() is not None and proc.returncode != 0:
+        print(f"speak.py exited immediately (code {proc.returncode}) — "
+              "see ~/tts_hook_debug.log", file=sys.stderr)
+        return 1
     print(f"Reading {len(text)} chars.", file=sys.stderr)
     return 0
 
