@@ -232,6 +232,18 @@ def main():
     if last_msg and text_hash(last_msg) not in {text_hash(t) for t in candidates}:
         candidates.append(last_msg)
 
+    # Save ONLY the turn's final message for read-last.py replay —
+    # mid-turn status blocks are noise when someone asks to hear "the
+    # last response". Saved before dedup: it's replayable even if it
+    # was already spoken.
+    last_final = last_msg or (candidates[-1] if candidates else "")
+    if last_final:
+        try:
+            with open(LAST_MSG_FILE, "w", encoding="utf-8") as f:
+                f.write(last_final)
+        except IOError as e:
+            log(f"Error saving last message: {e}")
+
     # Content dedup: never speak a block twice, regardless of which
     # source it arrived from or when the transcript got flushed.
     to_speak = []
@@ -254,16 +266,8 @@ def main():
 
     full_text = "\n\n".join(to_speak)
 
-    # Always save the turn's text so read-last.py can replay it on
-    # demand (the manual-mode trigger passes no text — zero tokens).
-    try:
-        with open(LAST_MSG_FILE, "w", encoding="utf-8") as f:
-            f.write(full_text)
-    except IOError as e:
-        log(f"Error saving last message: {e}")
-
     if os.path.exists(MANUAL_FLAG):
-        log(f"Manual mode: saved {len(to_speak)} block(s), not speaking")
+        log(f"Manual mode: not speaking ({len(to_speak)} new block(s); final message saved for replay)")
         return
 
     kill_previous_playback()
