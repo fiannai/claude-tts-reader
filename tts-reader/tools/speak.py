@@ -40,7 +40,9 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 DEFAULTS = {
-    "api_url": "http://TheDen:8190",
+    "api_url": "http://waternoose:8765",
+    "tts_path": "/v1/tts/synthesize",
+    "api_key_file": "~/.tts_api_key",
     "default_voice": "af_heart",
     "max_queue_size": 20,
     "request_timeout": 30,
@@ -139,10 +141,24 @@ def chunk_by_sentence(text: str) -> List[str]:
     return sentences
 
 
+def get_api_key() -> str:
+    """Read the API key from the configured key file (never committed)."""
+    key_file = os.path.expanduser(config.get("api_key_file"))
+    try:
+        with open(key_file, 'r') as f:
+            return f.read().strip()
+    except IOError:
+        return ""
+
+
 def generate_audio(text: str, voice: str) -> bytes:
     payload = {"text": text, "voice": voice}
-    endpoint = config.get("api_url").rstrip('/') + '/api/generate'
-    response = requests.post(endpoint, json=payload,
+    endpoint = config.get("api_url").rstrip('/') + config.get("tts_path")
+    headers = {}
+    api_key = get_api_key()
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    response = requests.post(endpoint, json=payload, headers=headers,
                              timeout=config.get("request_timeout"))
     if response.status_code != 200:
         print(f"API Error: {response.text}", file=sys.stderr)

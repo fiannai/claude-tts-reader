@@ -5,8 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/read-response.py\"",
-            "timeout": 120,
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/read-response.py\" || python \"${CLAUDE_PLUGIN_ROOT}/hooks/read-response.py\"",
+            "timeout": 600,
             "async": true
           }
         ]

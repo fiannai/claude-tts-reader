@@ -1,5 +1,7 @@
 {
-  "api_url": "http://TheDen:8190",
+  "api_url": "http://waternoose:8765",
+  "tts_path": "/v1/tts/synthesize",
+  "api_key_file": "~/.tts_api_key",
   "default_voice": "af_heart",
   "max_queue_size": 20,
   "request_timeout": 30,
