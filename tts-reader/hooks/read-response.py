@@ -34,6 +34,7 @@ IS_WINDOWS = os.name == "nt"
 DEBUG_LOG = os.path.expanduser("~/tts_hook_debug.log")
 DISABLED_FLAG = os.path.expanduser("~/.tts_disabled")
 MANUAL_FLAG = os.path.expanduser("~/.tts_manual")
+SKIP_NEXT_FLAG = os.path.expanduser("~/.tts_skip_next")
 LAST_MSG_FILE = os.path.expanduser("~/.tts_last_message")
 PID_FILE = os.path.expanduser("~/.tts_speak_pid")
 STATE_DIR = os.path.expanduser("~/.tts_positions")
@@ -211,6 +212,16 @@ def read_new_transcript_texts(transcript_path, pos_file):
 def main():
     log("=== Hook triggered ===")
 
+    # One-shot suppression (set by /stopreader): consume the flag
+    # immediately so it can never linger and eat a later, wanted read.
+    skip_once = False
+    if os.path.exists(SKIP_NEXT_FLAG):
+        try:
+            os.remove(SKIP_NEXT_FLAG)
+        except OSError:
+            pass
+        skip_once = True
+
     if os.path.exists(DISABLED_FLAG):
         log("Reader is disabled, skipping")
         return
@@ -251,9 +262,11 @@ def main():
     # Save ONLY the turn's final message for read-last.py replay —
     # mid-turn status blocks are noise when someone asks to hear "the
     # last response". Saved before dedup: it's replayable even if it
-    # was already spoken.
+    # was already spoken. Skip-flagged turns (/stopreader, /readlast
+    # confirmations) never become "the last message" — otherwise
+    # replaying would clobber the very content the user asked to hear.
     last_final = last_msg or (candidates[-1] if candidates else "")
-    if last_final:
+    if last_final and not skip_once:
         try:
             with open(LAST_MSG_FILE, "w", encoding="utf-8") as f:
                 f.write(last_final)
@@ -281,6 +294,12 @@ def main():
         save_spoken_hashes(hash_file, spoken)
 
     full_text = "\n\n".join(to_speak)
+
+    if skip_once:
+        # The turn's text is recorded as spoken (hashes above) so it
+        # won't come back next turn — it just never hits the speakers.
+        log(f"Skip-next consumed: {len(to_speak)} block(s) suppressed")
+        return
 
     if os.path.exists(MANUAL_FLAG):
         log(f"Manual mode: not speaking ({len(to_speak)} new block(s); final message saved for replay)")
