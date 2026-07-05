@@ -35,6 +35,7 @@ DEBUG_LOG = os.path.expanduser("~/tts_hook_debug.log")
 DISABLED_FLAG = os.path.expanduser("~/.tts_disabled")
 MANUAL_FLAG = os.path.expanduser("~/.tts_manual")
 SKIP_NEXT_FLAG = os.path.expanduser("~/.tts_skip_next")
+FOCUS_FILE = os.path.expanduser("~/.tts_focus")
 LAST_MSG_FILE = os.path.expanduser("~/.tts_last_message")
 PID_FILE = os.path.expanduser("~/.tts_speak_pid")
 STATE_DIR = os.path.expanduser("~/.tts_positions")
@@ -235,6 +236,21 @@ def main():
     transcript_path = hook_input.get("transcript_path")
     last_msg = (hook_input.get("last_assistant_message") or "").strip()
 
+    # Solo mode: when ~/.tts_focus names a session, only that session
+    # speaks or updates the replay slot. Everyone else does silent
+    # bookkeeping (cursor + hashes advance) so moving focus later never
+    # dumps an unread backlog.
+    focused_out = False
+    if os.path.exists(FOCUS_FILE):
+        session_id = hook_input.get("session_id", "")
+        try:
+            with open(FOCUS_FILE, "r") as f:
+                focus = f.read().strip()
+        except IOError:
+            focus = ""
+        if focus and focus != session_id:
+            focused_out = True
+
     candidates = []
     spoken = []
     hash_file = None
@@ -266,7 +282,7 @@ def main():
     # confirmations) never become "the last message" — otherwise
     # replaying would clobber the very content the user asked to hear.
     last_final = last_msg or (candidates[-1] if candidates else "")
-    if last_final and not skip_once:
+    if last_final and not skip_once and not focused_out:
         try:
             with open(LAST_MSG_FILE, "w", encoding="utf-8") as f:
                 f.write(last_final)
@@ -294,6 +310,11 @@ def main():
         save_spoken_hashes(hash_file, spoken)
 
     full_text = "\n\n".join(to_speak)
+
+    if focused_out:
+        log(f"Solo mode: focus is elsewhere — {len(to_speak)} block(s) "
+            "bookkept, not speaking")
+        return
 
     if skip_once:
         # The turn's text is recorded as spoken (hashes above) so it
