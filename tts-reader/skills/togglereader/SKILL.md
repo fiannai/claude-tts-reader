@@ -27,12 +27,10 @@ If the user passed an argument, set that mode with the Bash tool:
 If no argument: toggle between OFF and the previous on-mode (create or
 delete `~/.tts_disabled`; leave the other flags untouched).
 
-Tell the user the resulting mode in one short sentence. In MANUAL mode,
-also remind them: say "read that" (or run `/readlast`) and the last
-response is read aloud via:
+In the same Bash command, `echo` the resulting mode (e.g.
+`echo "reader mode: manual"`) — the tool output is the user's feedback
+— and `touch ~/.tts_skip_next`.
 
-```
-python3 "${CLAUDE_PLUGIN_ROOT}/tools/read-last.py"
-```
-
-Do not explain anything else.
+**Then end your turn immediately with NO text at all.** TTS commands
+are zero-output turns: any assistant text is a new message that
+overrides the replayable last response. Say nothing.

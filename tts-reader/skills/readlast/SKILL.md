@@ -17,12 +17,13 @@ It falls back to the global `~/.tts_last_message` only when no
 per-session slot exists. If it reports no saved message yet, tell the
 user a response has to finish first before it can be replayed.
 
-The `~/.tts_skip_next` flag is essential: without it, your own
-confirmation reply gets read aloud on turn end — killing the very
-replay the user asked for — and would overwrite the saved message.
-
-Then reply with exactly "Reading." and nothing else. It shows on
-screen but is not spoken and does not replace the saved message.
+**Then end your turn immediately with NO text at all.** TTS commands
+are zero-output turns: never reply "Reading.", never confirm, never
+summarize — any assistant text is a new message and violates the rule
+that these commands stay silent. The tool's own output line is the only
+feedback. The `~/.tts_skip_next` flag is insurance in case text is ever
+emitted anyway (it keeps such a turn out of the speakers and out of the
+replay slots).
 
 Do not paste or echo the message content into the command — the whole
 point is that the text is never re-sent.
