@@ -282,13 +282,28 @@ def main():
     # was already spoken. Skip-flagged turns (/stopreader, /readlast
     # confirmations) never become "the last message" — otherwise
     # replaying would clobber the very content the user asked to hear.
+    #
+    # Two slots: a PER-SESSION slot (what THIS session last said —
+    # read-last prefers it, so concurrent sessions can't clobber each
+    # other's replay) and the legacy global slot (last of ANY session;
+    # fallback for callers without a session id).
     last_final = last_msg or (candidates[-1] if candidates else "")
-    if last_final and not skip_once and not focused_out:
-        try:
-            with open(LAST_MSG_FILE, "w", encoding="utf-8") as f:
-                f.write(last_final)
-        except IOError as e:
-            log(f"Error saving last message: {e}")
+    if last_final and not skip_once:
+        session_id = hook_input.get("session_id", "")
+        if session_id:
+            os.makedirs(STATE_DIR, exist_ok=True)
+            try:
+                with open(os.path.join(STATE_DIR, f"{session_id}.last"),
+                          "w", encoding="utf-8") as f:
+                    f.write(last_final)
+            except IOError as e:
+                log(f"Error saving per-session last message: {e}")
+        if not focused_out:
+            try:
+                with open(LAST_MSG_FILE, "w", encoding="utf-8") as f:
+                    f.write(last_final)
+            except IOError as e:
+                log(f"Error saving last message: {e}")
 
     # Content dedup: never speak a block twice, regardless of which
     # source it arrived from or when the transcript got flushed.
