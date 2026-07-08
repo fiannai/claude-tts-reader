@@ -213,15 +213,27 @@ def read_new_transcript_texts(transcript_path, pos_file):
 def main():
     log("=== Hook triggered ===")
 
-    # One-shot suppression (set by /stopreader): consume the flag
-    # immediately so it can never linger and eat a later, wanted read.
+    # One-shot suppression (set by /readlast, /stopreader, /togglereader):
+    # consume the flag immediately so it can never linger and eat a
+    # later, wanted read. TTL guard: the flag is meant for the turn that
+    # set it (seconds-scale) — if that turn got interrupted before its
+    # Stop fired, a stale flag would suppress the NEXT real turn's save
+    # instead. Older than 120s = stale: delete but ignore.
     skip_once = False
     if os.path.exists(SKIP_NEXT_FLAG):
+        try:
+            age = time.time() - os.path.getmtime(SKIP_NEXT_FLAG)
+        except OSError:
+            age = 0.0
         try:
             os.remove(SKIP_NEXT_FLAG)
         except OSError:
             pass
-        skip_once = True
+        if age <= 120:
+            skip_once = True
+        else:
+            log(f"Stale skip flag ignored (age {int(age)}s — "
+                "its turn was likely interrupted)")
 
     # Disabled means SILENT, not dead: bookkeeping still runs and the
     # replay slot stays current so /readlast always has the latest
@@ -333,8 +345,10 @@ def main():
         return
 
     if disabled:
+        slot_note = ("replay slot updated" if last_final and not skip_once
+                     else "replay slot untouched")
         log(f"Reader disabled: {len(to_speak)} block(s) bookkept, "
-            "replay slot updated, not speaking")
+            f"{slot_note}, not speaking")
         return
 
     if skip_once:
