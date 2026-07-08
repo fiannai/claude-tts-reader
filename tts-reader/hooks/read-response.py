@@ -223,9 +223,10 @@ def main():
             pass
         skip_once = True
 
-    if os.path.exists(DISABLED_FLAG):
-        log("Reader is disabled, skipping")
-        return
+    # Disabled means SILENT, not dead: bookkeeping still runs and the
+    # replay slot stays current so /readlast always has the latest
+    # response (quiet must never mean stale).
+    disabled = os.path.exists(DISABLED_FLAG)
 
     try:
         hook_input = json.load(sys.stdin)
@@ -314,6 +315,11 @@ def main():
     if focused_out:
         log(f"Solo mode: focus is elsewhere — {len(to_speak)} block(s) "
             "bookkept, not speaking")
+        return
+
+    if disabled:
+        log(f"Reader disabled: {len(to_speak)} block(s) bookkept, "
+            "replay slot updated, not speaking")
         return
 
     if skip_once:

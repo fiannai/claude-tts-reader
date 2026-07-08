@@ -12,7 +12,7 @@ Set the TTS reader mode. Controlled by three flag files:
 | AUTO | absent | absent | absent | every response in every session is read aloud |
 | MANUAL | absent | exists | — | silent; each response saved; read on demand |
 | SOLO | absent | absent | this session's id | ONLY this session is read aloud; other sessions stay silent |
-| OFF | exists | (ignored) | (ignored) | nothing happens |
+| OFF | exists | (ignored) | (ignored) | silent — but each response is still saved, so `/readlast` stays current |
 
 If the user passed an argument, set that mode with the Bash tool:
 - `auto` — delete `~/.tts_disabled`, `~/.tts_manual`, and `~/.tts_focus`
