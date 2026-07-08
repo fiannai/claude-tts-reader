@@ -18,10 +18,8 @@ On Windows:
 (Windows users also have the Ctrl+Alt+S hotkey from setup. On Windows
 also create the empty file `~/.tts_skip_next` after running the bat.)
 
-The `~/.tts_skip_next` flag makes the reader stay SILENT for this
-turn's own reply — without it, the reader would immediately read your
-confirmation aloud, defeating the stop.
-
-Then reply with exactly "Stopped." and nothing else. It will appear on
-screen but will not be spoken. This only stops the current playback;
-it does not change the reader mode.
+Then reply with exactly "Stopped." and nothing else — a completely
+empty reply is not possible (the runtime rejects empty turns), so this
+fixed token is the minimum. The `~/.tts_skip_next` flag keeps it out of
+the speakers and out of the replay slots. This only stops the current
+playback; it does not change the reader mode.

@@ -12,7 +12,7 @@ Set the TTS reader mode. Controlled by three flag files:
 | AUTO | absent | absent | absent | every response in every session is read aloud |
 | MANUAL | absent | exists | — | silent; each response saved; read on demand |
 | SOLO | absent | absent | this session's id | ONLY this session is read aloud; other sessions stay silent |
-| OFF | exists | (ignored) | (ignored) | nothing happens |
+| OFF | exists | (ignored) | (ignored) | silent — but each response is still saved, so `/readlast` stays current |
 
 If the user passed an argument, set that mode with the Bash tool:
 - `auto` — delete `~/.tts_disabled`, `~/.tts_manual`, and `~/.tts_focus`
@@ -27,12 +27,10 @@ If the user passed an argument, set that mode with the Bash tool:
 If no argument: toggle between OFF and the previous on-mode (create or
 delete `~/.tts_disabled`; leave the other flags untouched).
 
-Tell the user the resulting mode in one short sentence. In MANUAL mode,
-also remind them: say "read that" (or run `/readlast`) and the last
-response is read aloud via:
+In the same Bash command, also `touch ~/.tts_skip_next` (keeps the
+confirmation out of the speakers and replay slots).
 
-```
-python3 "${CLAUDE_PLUGIN_ROOT}/tools/read-last.py"
-```
-
-Do not explain anything else.
+Then tell the user the resulting mode in one short sentence (e.g.
+"Reader set to manual."). In MANUAL mode, also remind them: say "read
+that" (or run `/readlast`) to hear the last response. Do not explain
+anything else.

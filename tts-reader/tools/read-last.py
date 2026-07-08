@@ -54,8 +54,18 @@ def kill_previous_playback():
 
 
 def main() -> int:
+    # Prefer THIS session's own slot (written per session_id by the
+    # hook) — with several sessions live, the global slot holds
+    # whichever session finished last, not what *this* AI said.
+    source = LAST_MSG_FILE
+    session_id = os.environ.get("CLAUDE_CODE_SESSION_ID", "").strip()
+    if session_id:
+        per_session = os.path.expanduser(
+            os.path.join("~/.tts_positions", f"{session_id}.last"))
+        if os.path.exists(per_session):
+            source = per_session
     try:
-        with open(LAST_MSG_FILE, "r", encoding="utf-8") as f:
+        with open(source, "r", encoding="utf-8") as f:
             text = f.read().strip()
     except IOError:
         print("No saved message to read yet.", file=sys.stderr)
