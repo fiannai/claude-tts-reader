@@ -27,10 +27,10 @@ If the user passed an argument, set that mode with the Bash tool:
 If no argument: toggle between OFF and the previous on-mode (create or
 delete `~/.tts_disabled`; leave the other flags untouched).
 
-In the same Bash command, `echo` the resulting mode (e.g.
-`echo "reader mode: manual"`) — the tool output is the user's feedback
-— and `touch ~/.tts_skip_next`.
+In the same Bash command, also `touch ~/.tts_skip_next` (keeps the
+confirmation out of the speakers and replay slots).
 
-**Then end your turn immediately with NO text at all.** TTS commands
-are zero-output turns: any assistant text is a new message that
-overrides the replayable last response. Say nothing.
+Then tell the user the resulting mode in one short sentence (e.g.
+"Reader set to manual."). In MANUAL mode, also remind them: say "read
+that" (or run `/readlast`) to hear the last response. Do not explain
+anything else.
